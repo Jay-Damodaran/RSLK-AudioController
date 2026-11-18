@@ -1,0 +1,260 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#14532d">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>RSLK Controller</title>
+  <style>
+    :root {
+      --bg: #0b1f14;
+      --pad: #1f7a3f;
+      --pad-edge: #145a2c;
+      --teal: #008080;
+      --teal-dark: #005a5a;
+      --teal-lit: #20b2aa;
+      --stop: #008080;
+      --icon: #f2fffd;
+      /* Controller size follows the SHORTER screen side, so it fits in portrait and landscape */
+      --size: min(88vmin, 520px);
+      --btn: calc(var(--size) * 0.28);
+      --gap: calc(var(--size) * 0.03);
+    }
+
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+    html, body {
+      margin: 0;
+      height: 100%;
+      background: var(--bg);
+      overflow: hidden;
+      touch-action: none;           /* no scroll / pinch / double-tap zoom */
+      -webkit-user-select: none;
+      user-select: none;
+      -webkit-touch-callout: none;
+    }
+
+    body {
+      display: grid;
+      place-items: center;
+      height: 100dvh;
+      padding: env(safe-area-inset-top) env(safe-area-inset-right)
+               env(safe-area-inset-bottom) env(safe-area-inset-left);
+    }
+
+    .pad {
+      width: var(--size);
+      height: var(--size);
+      border-radius: 50%;
+      background: radial-gradient(circle at 35% 30%, #2a9a52, var(--pad) 55%, var(--pad-edge));
+      box-shadow:
+        0 calc(var(--size) * 0.025) 0 var(--pad-edge),
+        0 calc(var(--size) * 0.05) calc(var(--size) * 0.08) rgba(0, 0, 0, 0.5),
+        inset 0 2px 6px rgba(255, 255, 255, 0.15);
+      display: grid;
+      grid-template-columns: repeat(3, var(--btn));
+      grid-template-rows: repeat(3, var(--btn));
+      gap: var(--gap);
+      place-content: center;
+    }
+
+    button {
+      appearance: none;
+      border: 0;
+      padding: 0;
+      margin: 0;
+      display: grid;
+      place-items: center;
+      cursor: pointer;
+      background: linear-gradient(160deg, var(--teal-lit) -30%, var(--teal) 40%, var(--teal) 75%, var(--teal-dark));
+      box-shadow: 0 calc(var(--btn) * 0.07) 0 var(--teal-dark),
+                  0 calc(var(--btn) * 0.1) calc(var(--btn) * 0.12) rgba(0, 0, 0, 0.35);
+      transition: transform 60ms ease, box-shadow 60ms ease, filter 60ms ease;
+      touch-action: none;
+    }
+
+    button:focus { outline: none; }
+    button:focus-visible { outline: 3px solid var(--icon); outline-offset: 3px; }
+
+    button.pressed {
+      transform: translateY(calc(var(--btn) * 0.06));
+      box-shadow: 0 calc(var(--btn) * 0.01) 0 var(--teal-dark),
+                  0 calc(var(--btn) * 0.03) calc(var(--btn) * 0.05) rgba(0, 0, 0, 0.35);
+      filter: brightness(1.2);
+    }
+
+    /* Squircle: rounded-square fallback, true superellipse where supported */
+    .dir { border-radius: 30%; }
+    @supports (corner-shape: squircle) {
+      .dir { border-radius: 45%; corner-shape: squircle; }
+    }
+
+    .stop {
+      border-radius: 50%;
+      background: radial-gradient(circle at 35% 30%, var(--teal-lit) -30%, var(--stop) 60%, var(--teal-dark));
+    }
+
+    #up    { grid-area: 1 / 2; }
+    #left  { grid-area: 2 / 1; }
+    #stop  { grid-area: 2 / 2; }
+    #right { grid-area: 2 / 3; }
+    #down  { grid-area: 3 / 2; }
+
+    svg {
+      width: 52%;
+      height: 52%;
+      fill: var(--icon);
+      stroke: var(--icon);
+      pointer-events: none;
+      filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.3));
+    }
+  </style>
+</head>
+<body>
+  <main class="pad" role="group" aria-label="Robot controller">
+    <!-- One arrow shape, rotated per direction. Arrows are always relative to the screen. -->
+    <button class="dir" id="up" data-cmd="up" aria-label="Forward">
+      <svg viewBox="0 0 24 24"><path d="M12 3 L22 19 L2 19 Z" stroke-linejoin="round" stroke-width="2"/></svg>
+    </button>
+    <button class="dir" id="left" data-cmd="left" aria-label="Left">
+      <svg viewBox="0 0 24 24" style="transform:rotate(-90deg)"><path d="M12 3 L22 19 L2 19 Z" stroke-linejoin="round" stroke-width="2"/></svg>
+    </button>
+    <button class="stop" id="stop" data-cmd="stop" aria-label="Stop">
+      <svg viewBox="0 0 24 24"><path d="M5 5 L19 19 M19 5 L5 19" fill="none" stroke-width="4" stroke-linecap="round"/></svg>
+    </button>
+    <button class="dir" id="right" data-cmd="right" aria-label="Right">
+      <svg viewBox="0 0 24 24" style="transform:rotate(90deg)"><path d="M12 3 L22 19 L2 19 Z" stroke-linejoin="round" stroke-width="2"/></svg>
+    </button>
+    <button class="dir" id="down" data-cmd="down" aria-label="Back">
+      <svg viewBox="0 0 24 24" style="transform:rotate(180deg)"><path d="M12 3 L22 19 L2 19 Z" stroke-linejoin="round" stroke-width="2"/></svg>
+    </button>
+  </main>
+
+  <script>
+    'use strict';
+
+    // Each command maps to its FSK audio file. Keep these lossless (WAV) so tones stay clean.
+    const SOUND_FILES = Object.freeze({
+      stop:  'audio_cmds/fsk_cmd_stop_1.wav',
+      left:  'audio_cmds/fsk_cmd_left_2.wav',
+      right: 'audio_cmds/fsk_cmd_right_4.wav',
+      up:    'audio_cmds/fsk_cmd_up_8.wav',
+      down:  'audio_cmds/fsk_cmd_down_16.wav',
+    });
+
+    const PRESS_FLASH_MS = 120;
+    const VIBRATE_MS = 15;
+
+    // iOS 16.4+: play even when the ringer switch is on silent
+    try {
+      if (navigator.audioSession) navigator.audioSession.type = 'playback';
+    } catch (e) { /* not supported; ignore */ }
+
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    const ctx = AudioCtx ? new AudioCtx() : null;
+    const buffers = {};          // cmd -> decoded AudioBuffer
+    const fallbacks = {};        // cmd -> HTMLAudioElement (used if Web Audio fails)
+    let current = null;          // currently playing source/element
+
+    async function loadSound(cmd, url) {
+      try {
+        const res = await fetch(url);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.arrayBuffer();
+        if (!ctx) throw new Error('Web Audio unavailable');
+        buffers[cmd] = await new Promise((resolve, reject) =>
+          ctx.decodeAudioData(data, resolve, reject));
+      } catch (err) {
+        console.warn(`Using <audio> fallback for "${cmd}":`, err);
+        const el = new Audio(url);
+        el.preload = 'auto';
+        fallbacks[cmd] = el;
+      }
+    }
+
+    Object.entries(SOUND_FILES).forEach(([cmd, url]) => loadSound(cmd, url));
+
+    function stopCurrent() {
+      if (!current) return;
+      try {
+        if (current instanceof HTMLMediaElement) {
+          current.pause();
+          current.currentTime = 0;
+        } else {
+          current.stop();
+        }
+      } catch (e) { /* already stopped */ }
+      current = null;
+    }
+
+    function play(cmd) {
+      // New command always interrupts the previous one so tones never overlap
+      stopCurrent();
+
+      if (ctx && ctx.state !== 'running') ctx.resume();
+
+      const buf = buffers[cmd];
+      if (buf && ctx) {
+        const src = ctx.createBufferSource();
+        src.buffer = buf;
+        src.connect(ctx.destination);
+        src.onended = () => { if (current === src) current = null; };
+        src.start();
+        current = src;
+        return;
+      }
+
+      const el = fallbacks[cmd] || new Audio(SOUND_FILES[cmd]);
+      el.currentTime = 0;
+      el.play().catch((err) => console.error(`Could not play "${cmd}":`, err));
+      current = el;
+    }
+
+    function flash(btn) {
+      btn.classList.add('pressed');
+      setTimeout(() => btn.classList.remove('pressed'), PRESS_FLASH_MS);
+    }
+
+    document.querySelectorAll('button[data-cmd]').forEach((btn) => {
+      const cmd = btn.dataset.cmd;
+      if (!SOUND_FILES[cmd]) return;
+
+      // pointerdown fires immediately (no 300ms click delay)
+      btn.addEventListener('pointerdown', (e) => {
+        e.preventDefault();
+        play(cmd);
+        flash(btn);
+        if (navigator.vibrate) navigator.vibrate(VIBRATE_MS);
+      });
+
+      // Keyboard (desktop testing): Enter / Space
+      btn.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          play(cmd);
+          flash(btn);
+        }
+      });
+    });
+
+    // Arrow keys / Space for desktop testing
+    const KEY_TO_CMD = Object.freeze({
+      ArrowUp: 'up', ArrowDown: 'down', ArrowLeft: 'left', ArrowRight: 'right',
+      ' ': 'stop', Escape: 'stop',
+    });
+    document.addEventListener('keydown', (e) => {
+      if (e.target instanceof HTMLButtonElement) return;
+      const cmd = KEY_TO_CMD[e.key];
+      if (!cmd) return;
+      e.preventDefault();
+      play(cmd);
+      flash(document.getElementById(cmd));
+    });
+
+    document.addEventListener('contextmenu', (e) => e.preventDefault());
+  </script>
+</body>
+</html>
