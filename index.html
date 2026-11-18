@@ -19,7 +19,12 @@
       --stop: #008080;
       --icon: #f2fffd;
       /* Controller size follows the SHORTER screen side, so it fits in portrait and landscape */
-      --size: min(88vmin, 520px);
+      --size: min(80vmin, 520px); /* fallback for older browsers */
+      --size: min(
+        calc((100dvw - env(safe-area-inset-left) - env(safe-area-inset-right)) * 0.84),
+        calc((100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom)) * 0.84),
+        520px
+      );
       --btn: calc(var(--size) * 0.28);
       --gap: calc(var(--size) * 0.03);
     }
